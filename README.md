@@ -7,33 +7,42 @@ XMPP (eXtensible Messaging and Presence Protocol) is an open protocol, with more
 ## How to use?
 * Download the project in: <pre> https://github.com/alegudiel/Proyecto1-Redes </pre>
 * Open the project and launch a Terminal or Shell inside of it
-* Verify that your computer has pip using <pre> python -m pip install --upgrade pip </pre>
-* Download the requiriments of the project using: <pre> pip install -r </pre>
 * Run the project using: <pre> python main.py </pre>
 
 ## Domain
 * alumchat.fun
 
 
-## Basic functionality
-1. Register an account
-2. Log-in
-3. Sign out
-4. Delete an account
+## Basic
+
+📝 Sign-up an account on the server
+
+💻 Log-in using an existing account
+
+🗑️ Delete an account from the server
+
+## Advanced
+
+👤 1 to 1 messaging
+
+👁 Show all contacts and their status
+
+👩🏻‍💻 Add users to contact list
+
+🤖 Show user's contact information 
+
+👥 Chat rooms
+
+📢 Set a presence message
+
+🔔 Send / receive notifications
+
+📂 Send / receive files
+
+💭 Set a default status
 
 
-## Advanced functionality
-1. Show all available users
-2. Add an user as a contact
-3. Show contact information of a user
-4. 1 to 1 messaging
-5. Group messaging
-6. Set a status
-7. Receive notifications
-8. Send/receive files
-
-
-## Resources used
+## Resources used
 * https://oriolrius.cat/wp-content/uploads/2009/10/Oreilly.XMPP.The.Definitive.Guide.May.2009.pdf
 * https://slixmpp.readthedocs.io/en/latest/
 * https://xmpp.org/
