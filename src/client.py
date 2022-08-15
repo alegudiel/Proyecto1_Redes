@@ -1,42 +1,274 @@
-from tkinter import OptionMenu
+import logging
 import slixmpp
+import aioconsole
+import slixmpp
+import logging
 from slixmpp.exceptions import IqError, IqTimeout
-import asyncio
-import sleekxmpp
 
 """ 
 This class is used to connect to the XMPP server and send messages
 This is a modified version of the sleekxmpp.Client class and will be used as a base class for the project
 """
-class Client():
 
-    def __init__(self, jid, password, backend, url) :
-        self.url = url
-        self.xmpp = sleekxmpp.ClientXMPP(jid, password)
-        self.xmpp.add_event_handler("session_start", self.handleXMPPConnected)
+statusOptions = {
+    1: 'chat',
+    2: 'away',
+    3: 'dnd'
+}
+
+class Client(slixmpp.ClientXMPP):
+    # This is the constructor for the Client class
+    # by default, it will connect to the server and log in (asuming an account is already created)
+    def __init__(self, jid, password, userOptionInit = 2):
+        slixmpp.ClientXMPP.__init__(self, jid, password)
+
+        # Event handlers that help us manage the chat.
+        # depending on the user userOptionInit, the user has to choose
+        # when user doesn't has an account, the user can create an account
+        if userOptionInit == 1:
+            self.add_event_handler("register", self.signUp) # only in the event of registry 
+
+        # if the user has an account he can do the following
+        else:
+            # session start event
+            self.add_event_handler("session_start", self.startSession) 
+
+            # loop for client requests
+            self.add_event_handler("session_start", self.clientReq) 
+
+            # in case the login fails
+            self.add_event_handler("failed_auth", self.failedAuth) 
+
+            # handle incoming messages
+            self.add_event_handler("message", self.incomingMsg) 
+
+            # handle incoming group messages
+            self.add_event_handler("groupchat_message", self.incomingGroupMsg) 
+
+            # handle muc room invitations
+            self.add_event_handler("groupchat_invite", self.joinGroup) 
+
+            # handle chat status notification 'composing'
+            self.add_event_handler("chatstate_composing", self.handleChatState) 
+
+        # pluggins needed for the client
+        self.register_plugin('xep_0004') # Data Forms
+        self.register_plugin('xep_0030') # Service Discovery
+        self.register_plugin('xep_0045') # multi-user chat
+        self.register_plugin('xep_0060') # PubSub
+        self.register_plugin('xep_0066') # Out-of-band Data
+        self.register_plugin('xep_0071') # needed for files
+        self.register_plugin('xep_0077') # In-band Registration
+        self.register_plugin('xep_0085') # notifications
+        self.register_plugin('xep_0128') # needed for files
+        self.register_plugin('xep_0199') # XMPP Ping
+        self.register_plugin('xep_0363') # files
+
+    # >>>>>>>>>>> CLIENT REQUESTS
+    # functionalities according to project requirements
+    # missing send file functionality
+
+    # sign up for an account
+    async def signUp(self, iq):
+        usrResponse = self.Iq()
+        usrResponse['type'] = 'set'
+        usrResponse['register']['username'] = self.boundjid.user
+        usrResponse['register']['password'] = self.password
+
+        try:
+            await usrResponse.send()
+            print("New account created for user %s! \nNow you can login with this user" % self.boundjid)
+            self.disconnect()
+        except IqError as e:
+            logging.error("Could not register account: %s" % e.iq['error']['text'])
+            self.disconnect()
+        except IqTimeout:
+            logging.error("Try again later, server not responding.")
+            self.disconnect()
+
+    # delete account from server
+    async def deleteAccount(self):
+        usrResponse = self.Iq()
+        usrResponse['type'] = 'set'
+        usrResponse['register']['remove'] = True
+
+        try:
+            await usrResponse.send()
+            print("Account removed succesfully")
+            self.disconnect()
+        except IqError as e:
+            logging.error("Could not remove account: %s" % e.iq['error']['text'])
+            self.disconnect()
+        except IqTimeout:
+            logging.error("Try again later, server not responding.")
+            self.disconnect()
+
+    # start the session *login*
+    async def startSession(self, event):
+        print("\Connecting to the server...")
+        # send presence to server to inform that the client is online 
+        self.send_presence()
+        print("\Welcome! You are now connected to the server\n")
+        # get roster of other clients
+        await self.get_roster()
+
+    # when the user info is not correct/not found
+    def failedAuth(self, event):
         
-        for event in ["message", "got_online", "got_offline", "changed_status"] :
-            self.xmpp.add_event_handler(event, self.handleIncomingXMPPEvent)
-            self.backend = backend
-            self.backend.addMessageHandler(self.handleMessageAddedToBackend)
-    
-    def handleXMPPConnected(self, event):
-        self.xmpp.sendPresence()
-    
-    def handleIncomingXMPPEvent(self, event) :
-        message = event["message"]
-        user = self.backend.getUserFromJID(event["jid"])
-        self.backend.addMessageFromUser(message, user)
+        print("Oh no! The login failed, the user: %s was not found :(\n")
+        logging.error("Please try again" % self.boundjid.bare)
+        self.disconnect()
 
-    def handleMessageAddedToBackend(self, message) :
-        body = message.user + ": " + message.text
-        htmlBody = "<a href=\"%(uri)s\">%(user)s</a>: %(message)s" % {
-        "uri": self.url + "/" + message.user,
-        "user" : message.user, "message" : message.text }
-        
-        for subscriberJID in self.backend.getSubscriberJIDs(message.user) :
-            self.xmpp.sendMessage(subscriberJID, body, mhtml=htmlBody)
+    # receive incoming messages from one user
+    def incomingMsg(self, msg):
+        if msg['type'] in ('chat', 'normal'):
+            print("[", msg['from'].bare, "] ", msg['body'])
 
-    def start(self) :
-        self.xmpp.connect()
-        self.xmpp.process()
+    # receive incoming from a group chat
+    def incomingGroupMsg(self, msg):
+        print("[", msg['from'].bare, "] ", "[", msg['mucnick'], "] ", msg['body'])
+
+    # ask user to join a specific group chat
+    def joinGroup(self, room, nickNameGroupchat):
+        self.plugin['xep_0045'].join_muc(room, nickNameGroupchat)
+
+    # roster of other clients
+    def show_roster(self):
+        groups = self.client_roster.groups()
+        # get groups available
+        for group in groups:
+            # get each user inside the contact group
+            print("\n<--------Info available--------->\n")
+            for jid in groups[group]:
+                sub = self.client_roster[jid]['subscription']
+                name = self.client_roster[jid]['name']
+                if self.client_roster[jid]['name']:
+                    print('\n %s (%s) [%s]' % (name, jid, sub))
+                else:
+                    print('\n %s [%s]' % (jid, sub))
+
+                # connection will be stablished if users are online
+                usrConnection = self.client_roster.presence(jid)
+                if usrConnection:
+                    for res, pres in usrConnection.items():
+                        show = 'chat'
+                        status = '-'
+
+                        if pres['show']:
+                            show = pres['show']
+
+                        if pres['status']:
+                            status = pres['status']
+                        
+                        print('   - %s (%s) (%s)' % (res, show, status))
+                else:
+                    print('   - Not available')
+
+    # get contact information
+    def user_information(self, jid):
+        if jid in self.client_roster.keys():
+            usrConnection = self.client_roster.presence(jid)
+            # connection will be stablished if users are online
+            if usrConnection:
+                for res, pres in usrConnection.items():
+                    show = 'chat'
+                    status = '-'
+                    
+                    if pres['show']:
+                        show = pres['show']
+
+                    if pres['status']:
+                        status = pres['status']
+                    
+                    print('   - %s (%s) (%s)' % (res, show, status))
+            else:
+                print('   - Not available')
+        else:
+            logging.error("The user: %s was not found" % jid)
+
+    # get a notificaion when a message is received
+    def chat_state_notifications(self, recipient, status):
+        state_notification = self.Message()
+        state_notification["to"] = recipient
+        state_notification["chat_state"] = status
+        state_notification.send()
+
+    # preview when a user is typing
+    def handleChatState(self, state):
+        print(state['from'].bare, " is typing...")
+
+    # show the list of available commands
+    async def clientReq(self, event):            
+        while True:
+            print("------------------------------------------------------")
+            userChoice = await aioconsole.ainput("With this chat you can: \n1. Message someone \n2. Join a group \n3. Show users info (Roster) \n4. Change current status \n5. Add a contact \n6. Show specific contact info \n7. Send files \n8. Delete account \n9. Log out \n>> Please, enter an option: ")
+            
+            try:
+                userChoice = int(userChoice)
+            except:
+                userChoice = 0
+                logging.ERROR("Option invalid, choose a valid one")
+
+            # message someone 1 to 1
+            if userChoice == 1:
+                recipient = await aioconsole.ainput(">> To: ")
+                mtype = 'groupchat'
+                
+                if "conference" not in recipient:
+                    mtype = 'chat'
+                    self.chat_state_notifications(recipient, "composing") 
+                
+                message = await aioconsole.ainput(""">> Your message: """)
+
+                if "conference" not in recipient:
+                    self.chat_state_notifications(recipient, "inactive")
+
+                self.send_message(mto=recipient,
+                    mbody=message,
+                    mtype=mtype
+                )
+
+            # join a group chat
+            elif userChoice == 2:
+                group_name = await aioconsole.ainput(">> Enter a cool name for your group chat: ")
+                nickNameGroupchat = await aioconsole.ainput(">> How do you want to be called? ")
+                self.joinGroup(group_name, nickNameGroupchat)
+                print("Succesfully joined the group %s!" % group_name)
+
+            # show all users info
+            elif userChoice == 3:
+                self.show_roster()
+
+            # change current status 
+            elif userChoice == 4:
+                show = await aioconsole.ainput(">>>Status options\n1. Chat \n2. Away \n3. DND \n>> ")
+                status = await aioconsole.ainput("\n>> Enter the status you want: ")
+                self.send_presence(pshow=statusOptions[int(show)], pstatus=status)
+
+            # add a contact
+            elif userChoice == 5:
+                jid = await aioconsole.ainput(">> Who do you want to add as a contact? ")
+                self.send_presence_subscription(presenceReq=jid)
+
+            # show contact info
+            elif userChoice == 6:
+                jid = await aioconsole.ainput(">> From what user would you like information? ")
+                self.user_information(jid)
+
+            # send files
+            elif userChoice == 7:
+                print("Stilling in development...")
+
+            # delete account
+            elif userChoice == 8:
+                await self.deleteAccount()
+                print("Sorry to see you go! \n You have been unregistered")
+
+            # log out
+            elif userChoice == 9:
+                print("Hope you had fun! Until next time...")
+                self.disconnect()
+
+            # invalid option
+            else:
+                logging.ERROR("Oops, not the right option, try again")

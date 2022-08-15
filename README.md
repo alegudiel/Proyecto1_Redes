@@ -3,11 +3,21 @@
 ## Description of the project
 XMPP (eXtensible Messaging and Presence Protocol) is an open protocol, with more than 10 years of development, which allows the interconnection between different instant messaging providers. This provider has the characteristics of handling encryption, being decentralized, being able to extend, easy to scale and being totally community.
 
+## Pre-requisites
+* aioconsole==0.3.1
+* async-generator==1.10
+* async-timeout==3.0.1
+* asyncio==3.4.3
+* slixmpp==1.7.1
 
 ## How to use?
 * Download the project in: <pre> https://github.com/alegudiel/Proyecto1-Redes </pre>
 * Open the project and launch a Terminal or Shell inside of it
+* Verify you have the pre-requisites
+* Go to the 'src' folder
 * Run the project using: <pre> python main.py </pre>
+
+
 
 ## Domain
 * alumchat.fun
@@ -15,31 +25,32 @@ XMPP (eXtensible Messaging and Presence Protocol) is an open protocol, with more
 
 ## Basic
 
-📝 Sign-up an account on the server
+[] 📝 Sign-up an account on the server
 
-💻 Log-in using an existing account
+[] 💻 Log-in using an existing account
 
-🗑️ Delete an account from the server
+[] 🗑️ Delete an account from the server
 
 ## Advanced
 
-👤 1 to 1 messaging
+[] 👤 1 to 1 messaging
 
-👁 Show all contacts and their status
+[] 👁 Show all contacts
 
-👩🏻‍💻 Add users to contact list
+[] 👩🏻‍💻 Add users to contact list
 
-🤖 Show user's contact information 
+[] 🤖 Show user's contact information 
 
-👥 Chat rooms
+[] 👥 Chat rooms
 
-📢 Set a presence message
+[] 📢 Set a presence message
 
-🔔 Send / receive notifications
+[] 🔔 Send / receive notifications
 
-📂 Send / receive files
+[] 💭 Set a default status
 
-💭 Set a default status
+[x] 📂 Send / receive files
+
 
 
 ## Resources used
@@ -47,5 +58,5 @@ XMPP (eXtensible Messaging and Presence Protocol) is an open protocol, with more
 * https://slixmpp.readthedocs.io/en/latest/
 * https://xmpp.org/
 * https://aioconsole.readthedocs.io/en/latest/
-* https://realpython.com/async-io-python/#:~:text=The%20syntax%20async%20def%20introduces,execution%20of%20the%20surrounding%20coroutine.)
-* 
+* https://realpython.com/async-io-python/#:~:text=The%20syntax%20async%20def%20introduces,execution%20of%20the%20surrounding%20coroutine
+* https://alegudiell.notion.site/Proyecto-1-30f3d71eba414e51accba1c1e972108d
