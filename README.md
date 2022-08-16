@@ -23,6 +23,8 @@ XMPP (eXtensible Messaging and Presence Protocol) is an open protocol, with more
 ## Domain
 * alumchat.fun
 
+## Class Presentation
+* https://alegudiell.notion.site/Presentaci-n-del-proyecto-eddf2fb88d554201ad0a9502a69e4529
 
 ## Basic
 
