@@ -49,7 +49,7 @@ class Client(slixmpp.ClientXMPP):
             self.add_event_handler("groupchat_invite", self.joinGroup) 
 
             # handle chat status notification 'composing'
-            self.add_event_handler("chatstate_composing", self.handleChatState) 
+            self.add_event_handler("chatstate_composing", self.userTypingNotif) 
 
         # pluggins needed for the client
         self.register_plugin('xep_0004') # Data Forms
@@ -77,56 +77,50 @@ class Client(slixmpp.ClientXMPP):
 
         try:
             await usrResponse.send()
-            print("New account created for user %s! \nNow you can login with this user" % self.boundjid)
+            print("----------------------------------------------------------------")
+            print("Welcome user %s! \nLogin to chat with your friends!" % self.boundjid)
+            print("----------------------------------------------------------------")
             self.disconnect()
         except IqError as e:
-            logging.error("Could not register account: %s" % e.iq['error']['text'])
+            logging.error("Account: %s couldn't be created, try again" % e.iq['error']['text'])
             self.disconnect()
         except IqTimeout:
             logging.error("Try again later, server not responding.")
             self.disconnect()
-
-    # delete account from server
-    async def deleteAccount(self):
-        usrResponse = self.Iq()
-        usrResponse['type'] = 'set'
-        usrResponse['register']['remove'] = True
-
-        try:
-            await usrResponse.send()
-            print("Account removed succesfully")
-            self.disconnect()
-        except IqError as e:
-            logging.error("Could not remove account: %s" % e.iq['error']['text'])
-            self.disconnect()
-        except IqTimeout:
-            logging.error("Try again later, server not responding.")
-            self.disconnect()
-
-    # start the session *login*
-    async def startSession(self, event):
-        print("\Connecting to the server...")
-        # send presence to server to inform that the client is online 
-        self.send_presence()
-        print("\Welcome! You are now connected to the server\n")
-        # get roster of other clients
-        await self.get_roster()
 
     # when the user info is not correct/not found
     def failedAuth(self, event):
-        
+        print("----------------------------------------------------------------")
         print("Oh no! The login failed, the user: %s was not found :(\n")
+        print("----------------------------------------------------------------")
         logging.error("Please try again" % self.boundjid.bare)
         self.disconnect()
+
+    # start the session *login*
+    async def startSession(self, event):
+        print("----------------------------------------------------------------")
+        print("\Connecting to the server...")
+        print("----------------------------------------------------------------")
+        # send presence to server to inform that the client is online 
+        self.send_presence()
+        print("----------------------------------------------------------------")
+        print("\Welcome! You are now connected to the server\n")
+        print("----------------------------------------------------------------")
+        # get roster of other clients
+        await self.get_roster()
 
     # receive incoming messages from one user
     def incomingMsg(self, msg):
         if msg['type'] in ('chat', 'normal'):
+            print("----------------------------------------------------------------")
             print("[", msg['from'].bare, "] ", msg['body'])
+            print("----------------------------------------------------------------")
 
     # receive incoming from a group chat
     def incomingGroupMsg(self, msg):
+        print("----------------------------------------------------------------")
         print("[", msg['from'].bare, "] ", "[", msg['mucnick'], "] ", msg['body'])
+        print("----------------------------------------------------------------")
 
     # ask user to join a specific group chat
     def joinGroup(self, room, nickNameGroupchat):
@@ -138,31 +132,37 @@ class Client(slixmpp.ClientXMPP):
         # get groups available
         for group in groups:
             # get each user inside the contact group
+            print("----------------------------------------------------------------")
             print("\n<--------Info available--------->\n")
+            print("----------------------------------------------------------------")
             for jid in groups[group]:
                 sub = self.client_roster[jid]['subscription']
                 name = self.client_roster[jid]['name']
                 if self.client_roster[jid]['name']:
+                    print("----------------------------------------------------------------")
                     print('\n %s (%s) [%s]' % (name, jid, sub))
+                    print("----------------------------------------------------------------")
                 else:
+                    print("----------------------------------------------------------------")
                     print('\n %s [%s]' % (jid, sub))
+                    print("----------------------------------------------------------------")
 
                 # connection will be stablished if users are online
                 usrConnection = self.client_roster.presence(jid)
                 if usrConnection:
-                    for res, pres in usrConnection.items():
-                        show = 'chat'
+                    for usrResp, presenceMsg in usrConnection.items():
+                        showStatus = 'chat'
                         status = '-'
 
-                        if pres['show']:
-                            show = pres['show']
+                        if presenceMsg['show']:
+                            showStatus = presenceMsg['show']
 
-                        if pres['status']:
-                            status = pres['status']
+                        if presenceMsg['status']:
+                            status = presenceMsg['status']
                         
-                        print('   - %s (%s) (%s)' % (res, show, status))
+                        print('   - %s (%s) (%s)' % (usrResp, showStatus, status))
                 else:
-                    print('   - Not available')
+                    print('   - Not available ')
 
     # get contact information
     def user_information(self, jid):
@@ -170,38 +170,62 @@ class Client(slixmpp.ClientXMPP):
             usrConnection = self.client_roster.presence(jid)
             # connection will be stablished if users are online
             if usrConnection:
-                for res, pres in usrConnection.items():
-                    show = 'chat'
+                for usrResp, presenceMsg in usrConnection.items():
+                    showStatus = 'chat'
                     status = '-'
                     
-                    if pres['show']:
-                        show = pres['show']
+                    if presenceMsg['show']:
+                        showStatus = presenceMsg['show']
 
-                    if pres['status']:
-                        status = pres['status']
+                    if presenceMsg['status']:
+                        status = presenceMsg['status']
                     
-                    print('   - %s (%s) (%s)' % (res, show, status))
+                    print('   - %s (%s) (%s)' % (usrResp, showStatus, status))
             else:
-                print('   - Not available')
+                print('   - Not available ')
         else:
             logging.error("The user: %s was not found" % jid)
 
     # get a notificaion when a message is received
-    def chat_state_notifications(self, recipient, status):
+    def handleUsrState(self, recipient, status):
         state_notification = self.Message()
         state_notification["to"] = recipient
         state_notification["chat_state"] = status
         state_notification.send()
 
     # preview when a user is typing
-    def handleChatState(self, state):
+    def userTypingNotif(self, state):
+        print("\n----------------------------------------------------------------")
         print(state['from'].bare, " is typing...")
+        print("----------------------------------------------------------------")
+
+    # delete account from server
+    async def deleteAccount(self):
+        usrResponse = self.Iq()
+        usrResponse['type'] = 'set'
+        usrResponse['register']['remove'] = True
+
+        try:
+            await usrResponse.send()
+            print("----------------------------------------------------------------")
+            print("Account deleted")
+            print("----------------------------------------------------------------")
+            self.disconnect()
+        except IqError as e:
+            print("----------------------------------------------------------------")
+            logging.error("Sorry, the server couldn't remove the account: %s" % e.iq['error']['text'])
+            print("----------------------------------------------------------------")
+            self.disconnect()
+        except IqTimeout:
+            logging.error("Try again later, server not responding.")
+            self.disconnect()
 
     # show the list of available commands
     async def clientReq(self, event):            
         while True:
             print("------------------------------------------------------")
             userChoice = await aioconsole.ainput("With this chat you can: \n1. Message someone \n2. Join a group \n3. Show users info (Roster) \n4. Change current status \n5. Add a contact \n6. Show specific contact info \n7. Send files \n8. Delete account \n9. Log out \n>> Please, enter an option: ")
+            print("------------------------------------------------------")
             
             try:
                 userChoice = int(userChoice)
@@ -216,12 +240,12 @@ class Client(slixmpp.ClientXMPP):
                 
                 if "conference" not in recipient:
                     mtype = 'chat'
-                    self.chat_state_notifications(recipient, "composing") 
+                    self.handleUsrState(recipient, "composing") 
                 
-                message = await aioconsole.ainput(""">> Your message: """)
+                message = await aioconsole.ainput(">>> Enter a message: ")
 
                 if "conference" not in recipient:
-                    self.chat_state_notifications(recipient, "inactive")
+                    self.handleUsrState(recipient, "inactive")
 
                 self.send_message(mto=recipient,
                     mbody=message,
@@ -241,14 +265,14 @@ class Client(slixmpp.ClientXMPP):
 
             # change current status 
             elif userChoice == 4:
-                show = await aioconsole.ainput(">>>Status options\n1. Chat \n2. Away \n3. DND \n>> ")
+                showStatusOpt = await aioconsole.ainput(">>>Status options\n1. Chat \n2. Away \n3. DND \n>> ")
                 status = await aioconsole.ainput("\n>> Enter the status you want: ")
-                self.send_presence(pshow=statusOptions[int(show)], pstatus=status)
+                self.send_presence(pshow=statusOptions[int(showStatusOpt)], pstatus=status)
 
             # add a contact
             elif userChoice == 5:
                 jid = await aioconsole.ainput(">> Who do you want to add as a contact? ")
-                self.send_presence_subscription(presenceReq=jid)
+                self.send_presence_subscription(pto=jid)
 
             # show contact info
             elif userChoice == 6:
