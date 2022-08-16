@@ -112,12 +112,14 @@ class Client(slixmpp.ClientXMPP):
     # receive incoming messages from one user
     def incomingMsg(self, msg):
         if msg['type'] in ('chat', 'normal'):
+            print("New message from: %s" % msg['from'].bare)
             print("----------------------------------------------------------------")
             print("[", msg['from'].bare, "] ", msg['body'])
             print("----------------------------------------------------------------")
 
     # receive incoming from a group chat
     def incomingGroupMsg(self, msg):
+        print("New message from: %s" % msg['from'].bare)
         print("----------------------------------------------------------------")
         print("[", msg['from'].bare, "] ", "[", msg['mucnick'], "] ", msg['body'])
         print("----------------------------------------------------------------")
