@@ -8,7 +8,8 @@ XMPP (eXtensible Messaging and Presence Protocol) is an open protocol, with more
 * async-generator
 * async-timeout
 * asyncio
-* slixmpp
+* slixmpp 
+* logging
 
 ## How to use?
 * Download the project in: <pre> https://github.com/alegudiel/Proyecto1-Redes </pre>
@@ -25,7 +26,7 @@ XMPP (eXtensible Messaging and Presence Protocol) is an open protocol, with more
 
 ## Basic
 
-[1/2] 📝 Sign-up an account on the server
+[☑️] 📝 Sign-up an account on the server
 
 [☑️] 💻 Log-in using an existing account
 
@@ -49,7 +50,7 @@ XMPP (eXtensible Messaging and Presence Protocol) is an open protocol, with more
 
 [☑️] 💭 Set a default status
 
-[x] 📂 Send / receive files
+[🔜] 📂 Send / receive files
 
 
 
