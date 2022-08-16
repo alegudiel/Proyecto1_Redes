@@ -29,7 +29,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=arg.loglevel, format='%(levelname)-8s %(message)s')
 
     # ask for the intended options
-    option = int(input("----------------------------\n*     Welcome to Alumchat     *\n----------------------------\n1. Sign Up\n2. Log In\n>> Please, enter a choice number: \n"))
+    option = int(input("----------------------------\n*     Welcome to Alumchat     *\n----------------------------\n1. Sign Up\n2. Log In\n>> Please, enter a choice number: "))
     
     # get username and password from user input
     jid = input(">> Enter your user ending with @alumchat.fun: ")
